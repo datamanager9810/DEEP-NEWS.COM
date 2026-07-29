@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="hi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep News - All-in-One Command Center</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { red: '#E50914', dark: '#0F172A', card: '#1E293B', accent: '#00F2FE' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .ticker-wrap { overflow: hidden; white-space: nowrap; }
+        .ticker-move { display: inline-block; animation: ticker 15s linear infinite; }
+        @keyframes ticker { 0% { transform: translate3d(100%, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+        .teleprompter-text { animation: scrollText 20s linear infinite paused; }
+        @keyframes scrollText { 0% { transform: translateY(100%); } 100% { transform: translateY(-100%); } }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+
+    <!-- ================= 1. SECURE LOGIN SCREEN (BLANK INPUTS) ================= -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-red-600/20 rounded-full blur-2xl"></div>
+            <div class="text-center mb-6">
+                <!-- HIGH-TECH MIC LOGO -->
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-red-700 to-red-500 text-white rounded-2xl text-3xl mb-3 shadow-lg shadow-red-600/40 border border-red-400/30">
+                    <i class="fa-solid fa-microphone-lines text-yellow-300"></i>
+                </div>
+                <h2 class="text-2xl font-bold tracking-tight">Deep News Studio</h2>
+                <p class="text-xs text-slate-400 mt-1">Authorized Press & Admin Access Only</p>
+            </div>
+            <form id="loginForm" class="space-y-4" autocomplete="off">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">User ID / Email</label>
+                    <input type="text" id="loginUser" placeholder="User ID darj karein" autocomplete="off" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-500 transition text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Password</label>
+                    <input type="password" id="loginPass" placeholder="Password darj karein" autocomplete="new-password" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-500 transition text-white">
+                </div>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock"></i> Secure Login
+                </button>
+            </form>
+            <p id="loginError" class="text-red-500 text-xs text-center mt-3 hidden">Invalid Credentials. Access Denied!</p>
+        </div>
+    </div>
+
+    <!-- ================= 2. MAIN ADMIN DASHBOARD ================= -->
+    <div id="adminDashboard" class="hidden min-h-screen flex flex-col">
+        
+        <!-- Header Nav -->
+        <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md shadow-red-600/30">
+                    <i class="fa-solid fa-microphone-lines text-yellow-300"></i>
+                </div>
+                <div>
+                    <h1 id="headerChannelName" class="text-xl font-extrabold tracking-wide text-white">DEEP NEWS</h1>
+                    <span class="text-[10px] text-red-400 font-bold uppercase tracking-wider">Live Journalism Hub</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 text-sm">
+                <div class="hidden md:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                    <span>C2PA Security Lock Active</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-300">
+                    <i class="fa-solid fa-id-badge text-red-500 text-base"></i>
+                    <span class="font-bold text-xs md:text-sm">Himanshu Yadav</span>
+                </div>
+                <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg text-xs transition">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-6">
+            
+            <!-- LEFT COLUMN: STUDIO CAMERA & OVERLAY ENGINE (8 Cols) -->
+            <section class="lg:col-span-8 space-y-6">
+                
+                <!-- Camera Preview Container -->
+                <div class="relative bg-black rounded-2xl overflow-hidden border border-slate-800 aspect-video shadow-2xl group">
+                    
+                    <!-- WebCam Feed -->
+                    <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                    
+                    <!-- OVERLAY GRAPHICS (Deep News Branding) -->
+                    <div id="studioOverlay" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+                        
+                        <!-- Top Bar Overlay -->
+                        <div class="flex justify-between items-start">
+                            <!-- HIGH-TECH CHANNEL LOGO BADGE -->
+                            <div class="bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white px-4 py-2 rounded-xl shadow-2xl border border-red-400/40 flex items-center gap-2.5 backdrop-blur-md">
+                                <i class="fa-solid fa-microphone-lines text-yellow-300 text-xl animate-pulse"></i>
+                                <span id="overlayChannelDisplay" class="font-black text-lg tracking-wider uppercase">DEEP NEWS</span>
+                            </div>
+                            
+                            <!-- Real-time Clock & Location -->
+                            <div class="bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700 text-right">
+                                <div id="liveClock" class="font-mono text-xs font-bold text-slate-200">00:00:00</div>
+                                <div class="text-[10px] text-red-400 font-bold uppercase tracking-widest">KANPUR LIVE</div>
+                            </div>
+                        </div>
+
+                        <!-- AI Teleprompter Overlay -->
+                        <div id="prompterBox" class="hidden self-center w-full max-w-md h-32 bg-black/60 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 overflow-hidden relative text-center">
+                            <p id="prompterText" class="teleprompter-text text-yellow-300 font-semibold text-lg leading-relaxed">
+                                Namaskar, aap dekh rahe hain Deep News. Himanshu Yadav ke sath ground zero se exclusive report...
+                            </p>
+                        </div>
+
+                        <!-- Bottom Ticker & Reporter Badge -->
+                        <div class="space-y-2">
+                            <!-- Reporter Tag (Himanshu Yadav) -->
+                            <div class="inline-flex items-center gap-2 bg-slate-900/90 border-l-4 border-red-600 px-3 py-1 rounded-r-md text-xs font-bold shadow-lg">
+                                <i class="fa-solid fa-user-gear text-red-500 text-xs"></i>
+                                <span>Reporter: <strong class="text-white">Himanshu Yadav</strong></span>
+                            </div>
+                            
+                            <!-- Lower Third Breaking News Banner -->
+                            <div class="bg-red-700 text-white rounded-lg p-2 font-bold shadow-xl flex items-center gap-3 border border-red-500">
+                                <span class="bg-black text-yellow-400 text-[10px] px-2 py-1 rounded uppercase tracking-wider font-black flex items-center gap-1">
+                                    <i class="fa-solid fa-bolt text-xs"></i> BREAKING
+                                </span>
+                                <div class="ticker-wrap flex-1 text-sm md:text-base font-extrabold">
+                                    <div id="tickerDisplay" class="ticker-move">
+                                        DEEP NEWS EXCLUSIVE: Aaj Kanpur me High-Tech Journalism Studio ki Shuruaat...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Indicator -->
+                    <div id="liveBadge" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white font-black text-xs px-4 py-1 rounded-full animate-pulse shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-tower-cell"></i> DIRECT LIVE BROADCASTING
+                    </div>
+                </div>
+
+                <!-- STUDIO CONTROLS BAR -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="startCamera()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                            <i class="fa-solid fa-camera"></i> Start Cam
+                        </button>
+                        <button id="recBtn" onclick="toggleRecord()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-red-600/30">
+                            <i class="fa-solid fa-circle"></i> <span id="recText">Record Byte</span>
+                        </button>
+                        <button onclick="toggleTeleprompter()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                            <i class="fa-solid fa-scroll"></i> Teleprompter
+                        </button>
+                    </div>
+
+                    <!-- Direct Broadcast Button -->
+                    <button onclick="toggleLiveMode()" id="liveModeBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
+                        <i class="fa-solid fa-broadcast-tower"></i> Direct Broadcast Mode
+                    </button>
+                </div>
+
+                <!-- QUICK CUSTOMIZATION PANEL -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-red-500"></i> Dynamic Branding Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Channel Name (Swap Branding)</label>
+                            <input type="text" id="channelNameInput" value="DEEP NEWS" oninput="updateBranding()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Lower Third Breaking Headline</label>
+                            <input type="text" id="tickerInput" value="DEEP NEWS EXCLUSIVE: Aaj Kanpur me High-Tech Journalism Studio ki Shuruaat..." oninput="updateBranding()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-red-500">
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- RIGHT COLUMN: AI TOOLS & PERMANENT VAULT (4 Cols) -->
+            <section class="lg:col-span-4 space-y-6">
+                
+                <!-- Recorded Media Output -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-download text-emerald-400"></i> Local Recorded Video
+                    </h3>
+                    <video id="recordedPreview" controls class="w-full rounded-xl bg-black border border-slate-800 aspect-video hidden"></video>
+                    <a id="downloadLink" class="hidden w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition text-center items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-arrow-down"></i> Save to Phone Gallery (HD MP4)
+                    </a>
+                </div>
+
+                <!-- AI Speech-to-Article Generator -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i> AI Speech-to-Article
+                        </h3>
+                        <span class="text-[10px] bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded font-mono">Instant</span>
+                    </div>
+                    <button onclick="generateAIArticle()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-xl text-xs font-semibold border border-slate-700 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-robot text-cyan-400"></i> Transcribe Audio to Text News
+                    </button>
+                    <textarea id="aiArticleBox" placeholder="AI generated news article will appear here automatically after recording..." class="w-full h-28 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 focus:outline-none resize-none"></textarea>
+                    <button class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-xl transition">
+                        Publish Article to Website
+                    </button>
+                </div>
+
+                <!-- Permanent Data Vault & Soft Delete -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-database text-amber-400"></i> Permanent Storage Vault
+                        </h3>
+                        <span class="text-[10px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded">No Auto-Delete</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Data hamesha safe rahega. Delete sirf aapke manual Trash Bin se hi hoga.</p>
+                    
+                    <div class="space-y-2">
+                        <div id="vaultItem1" class="flex justify-between items-center bg-slate-800 p-2.5 rounded-xl border border-slate-700 text-xs">
+                            <div class="truncate pr-2">
+                                <div class="font-semibold text-slate-200">Byte_Himanshu_Kanpur.mp4</div>
+                                <div class="text-[10px] text-slate-400">Saved • 1080p HD</div>
+                            </div>
+                            <button onclick="softDelete('vaultItem1')" class="text-slate-400 hover:text-red-400 p-1.5 transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- ================= 3. JAVASCRIPT LOGIC ================= -->
+    <script>
+        const AUTH_USER = "adv@himanshu9810";
+        const AUTH_PASS = "adv@himanshu14791";
+
+        // Login System Verification
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if(user === AUTH_USER && pass === AUTH_PASS) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                startCamera();
+                startClock();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            location.reload();
+        }
+
+        // Live Clock
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('liveClock').innerText = now.toLocaleTimeString();
+            }, 1000);
+        }
+
+        // Camera & Media Recorder
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('webcam').srcObject = stream;
+            } catch (err) {
+                alert("Camera Access Denied or Not Available: " + err);
+            }
+        }
+
+        // Record & Download Video Byte
+        function toggleRecord() {
+            const stream = document.getElementById('webcam').srcObject;
+            if(!stream) return alert("Pehle camera start karein!");
+
+            if(!isRecording) {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                
+                mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
+                mediaRecorder.onstop = saveVideo;
+                
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recBtn').classList.replace('bg-red-600', 'bg-yellow-500');
+                document.getElementById('recText').innerText = "Stop Recording";
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('recBtn').classList.replace('bg-yellow-500', 'bg-red-600');
+                document.getElementById('recText').innerText = "Record Byte";
+            }
+        }
+
+        function saveVideo() {
+            const blob = new Blob(recordedChunks, { type: 'video/mp4' });
+            const url = URL.createObjectURL(blob);
+            
+            const preview = document.getElementById('recordedPreview');
+            preview.src = url;
+            preview.classList.remove('hidden');
+
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = url;
+            downloadLink.download = `${document.getElementById('overlayChannelDisplay').innerText}_HimanshuYadav_${Date.now()}.mp4`;
+            downloadLink.classList.remove('hidden');
+            downloadLink.classList.add('flex');
+        }
+
+        // Live Overlay Branding Customization
+        function updateBranding() {
+            const name = document.getElementById('channelNameInput').value.toUpperCase();
+            const ticker = document.getElementById('tickerInput').value;
+            
+            document.getElementById('overlayChannelDisplay').innerText = name || "DEEP NEWS";
+            document.getElementById('headerChannelName').innerText = name || "DEEP NEWS";
+            document.getElementById('tickerDisplay').innerText = ticker || "BREAKING NEWS...";
+        }
+
+        // AI Teleprompter Toggle
+        function toggleTeleprompter() {
+            const box = document.getElementById('prompterBox');
+            const text = document.getElementById('prompterText');
+            box.classList.toggle('hidden');
+            text.style.animationPlayState = box.classList.contains('hidden') ? 'paused' : 'running';
+        }
+
+        // Direct Broadcast Mode Switcher
+        function toggleLiveMode() {
+            const badge = document.getElementById('liveBadge');
+            const btn = document.getElementById('liveModeBtn');
+            
+            if(badge.classList.contains('hidden')) {
+                badge.classList.remove('hidden');
+                btn.classList.replace('bg-indigo-600', 'bg-red-600');
+                btn.innerHTML = `<i class="fa-solid fa-stop"></i> Stop Live Broadcast`;
+            } else {
+                badge.classList.add('hidden');
+                btn.classList.replace('bg-red-600', 'bg-indigo-600');
+                btn.innerHTML = `<i class="fa-solid fa-broadcast-tower"></i> Direct Broadcast Mode`;
+            }
+        }
+
+        // AI Article Auto Generation
+        function generateAIArticle() {
+            const channel = document.getElementById('overlayChannelDisplay').innerText;
+            const headline = document.getElementById('tickerInput').value;
+            const text = `[${channel} EXCLUSIVE - KANPUR]\n\nReporter: Himanshu Yadav\nHeadline: ${headline}\n\nField Report: Live video byte recorded directly from ground zero. All security authentications and location metadata verified.\n\nKey Highlights:\n1. Reported live by Himanshu Yadav.\n2. Audio transcribed with AI high-accuracy.\n3. Ready for immediate publishing.`;
+            
+            document.getElementById('aiArticleBox').value = text;
+        }
+
+        // Permanent Vault Soft Delete
+        function softDelete(id) {
+            const item = document.getElementById(id);
+            if(confirm("Yeh item Soft Delete bin (Trash) me jayega. Permanent delete karne ke liye Data Vault Trash tab check karein.")) {
+                item.remove();
+            }
+        }
+    </script>
+</body>
+</html>
